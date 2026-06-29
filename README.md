@@ -32,7 +32,8 @@
 
 ## Shortcut
 
-- macOS: `Control + Option + M`
+- macOS: `Command + Option + M`
+- macOS fallback: `Control + Option + M`
 - Windows/Linux: `Control + Alt + M`
 - fallback: `Control + Shift + M`
 

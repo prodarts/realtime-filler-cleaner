@@ -30,7 +30,9 @@ function App() {
         target?.isContentEditable;
       const isMicShortcut =
         event.code === 'KeyM' &&
-        ((event.ctrlKey && event.altKey) || (event.ctrlKey && event.shiftKey));
+        ((event.metaKey && event.altKey) ||
+          (event.ctrlKey && event.altKey) ||
+          (event.ctrlKey && event.shiftKey));
 
       if (event.isComposing || isEditable || !isMicShortcut) {
         return;
@@ -157,7 +159,7 @@ function App() {
           disabled={!canUseSpeech}
         >
           <span>{isListening ? '停止' : 'マイク開始'}</span>
-          <kbd>⌃⌥M</kbd>
+          <kbd>⌘⌥M</kbd>
         </button>
         <button onClick={copyCleanedText} disabled={!cleanedText}>
           コピー
