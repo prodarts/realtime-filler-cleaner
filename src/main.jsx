@@ -17,7 +17,7 @@ function App() {
   const renderTimerRef = useRef(null);
   const lastRenderedTranscriptRef = useRef('');
   const [language, setLanguage] = useState('ja-JP');
-  const [activePane, setActivePane] = useState('cleaned');
+  const [activePane, setActivePane] = useState('raw');
   const [isListening, setIsListening] = useState(false);
   const [rawText, setRawText] = useState('');
   const [cleanedText, setCleanedText] = useState('');
@@ -39,12 +39,10 @@ function App() {
       return;
     }
 
-    for (const element of [rawTextRef.current, cleanedTextRef.current]) {
-      if (element) {
-        element.scrollTop = element.scrollHeight;
-      }
+    if (rawTextRef.current) {
+      rawTextRef.current.scrollTop = rawTextRef.current.scrollHeight;
     }
-  }, [rawText, cleanedText, isListening]);
+  }, [rawText, isListening]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -70,17 +68,16 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isListening, Recognition, language]);
 
-  function renderTexts(text) {
+  function renderRawText(text) {
     if (text === lastRenderedTranscriptRef.current) {
       return;
     }
 
     lastRenderedTranscriptRef.current = text;
     setRawText(text);
-    setCleanedText(removeFillers(text, language));
   }
 
-  function scheduleTextUpdate(text, options = {}) {
+  function scheduleRawTextUpdate(text, options = {}) {
     pendingTranscriptRef.current = text;
 
     if (options.immediate) {
@@ -88,7 +85,7 @@ function App() {
         window.clearTimeout(renderTimerRef.current);
         renderTimerRef.current = null;
       }
-      renderTexts(text);
+      renderRawText(text);
       return;
     }
 
@@ -98,8 +95,21 @@ function App() {
 
     renderTimerRef.current = window.setTimeout(() => {
       renderTimerRef.current = null;
-      renderTexts(pendingTranscriptRef.current);
+      renderRawText(pendingTranscriptRef.current);
     }, 90);
+  }
+
+  function generateCleanedText(sourceText = rawText) {
+    const nextText = removeFillers(sourceText, language);
+    setCleanedText(nextText);
+    setStatus(nextText ? '生成しました' : '生成するテキストがありません');
+    if (nextText) {
+      window.requestAnimationFrame(() => {
+        if (cleanedTextRef.current) {
+          cleanedTextRef.current.scrollTop = 0;
+        }
+      });
+    }
   }
 
   function startListening() {
@@ -131,7 +141,7 @@ function App() {
         }
       }
 
-      scheduleTextUpdate(`${finalTranscriptRef.current} ${interimTranscript}`.trim());
+      scheduleRawTextUpdate(`${finalTranscriptRef.current} ${interimTranscript}`.trim());
     };
 
     recognition.onerror = (event) => {
@@ -142,6 +152,11 @@ function App() {
     recognition.onend = () => {
       setIsListening(false);
       setStatus('停止中');
+      const latestText = pendingTranscriptRef.current || finalTranscriptRef.current || rawText;
+      if (latestText) {
+        scheduleRawTextUpdate(latestText, { immediate: true });
+        generateCleanedText(latestText);
+      }
     };
 
     recognitionRef.current = recognition;
@@ -184,7 +199,9 @@ function App() {
     }
 
     setLanguage(nextLanguage);
-    setCleanedText(removeFillers(rawText, nextLanguage));
+    if (cleanedText) {
+      setCleanedText(removeFillers(rawText, nextLanguage));
+    }
   }
 
   const selectedLanguage = languages.find((item) => item.id === language);
@@ -217,6 +234,9 @@ function App() {
         <button onClick={copyCleanedText} disabled={!cleanedText}>
           コピー
         </button>
+        <button onClick={() => generateCleanedText()} disabled={!rawText}>
+          生成
+        </button>
         <button onClick={clearText} disabled={!rawText && !cleanedText}>
           クリア
         </button>
@@ -243,7 +263,7 @@ function App() {
         </div>
         <div>
           <strong>コピー前提</strong>
-          <span>整えた文をすぐ渡す</span>
+          <span>停止後に生成して渡す</span>
         </div>
         <div>
           <strong>AI APIなし</strong>
@@ -267,7 +287,7 @@ function App() {
           aria-selected={activePane === 'cleaned'}
           onClick={() => setActivePane('cleaned')}
         >
-          フィラー削除済み
+          生成結果
         </button>
         <button
           type="button"
@@ -289,21 +309,21 @@ function App() {
             value={rawText}
             onChange={(event) => {
               finalTranscriptRef.current = event.target.value;
-              scheduleTextUpdate(event.target.value, { immediate: true });
+              scheduleRawTextUpdate(event.target.value, { immediate: true });
             }}
-            placeholder="ここに音声認識されたテキストが入ります。直接入力して試すこともできます。"
+            placeholder="話した内容がリアルタイムでここに入ります。直接入力してから生成することもできます。"
           />
         </article>
 
         <article className="pane cleaned-pane" data-mobile-active={activePane === 'cleaned'}>
           <div className="pane-header">
-            <h2>フィラー削除済み</h2>
+            <h2>生成結果</h2>
           </div>
           <textarea
             ref={cleanedTextRef}
             value={cleanedText}
             onChange={(event) => setCleanedText(event.target.value)}
-            placeholder="フィラーを削ったテキストがここに表示されます。"
+            placeholder="停止後、または「生成」を押すと、フィラーを削ったテキストがここに表示されます。"
           />
         </article>
       </section>

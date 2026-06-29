@@ -12,6 +12,8 @@ export const fillerPatternsByLanguage = {
     /えっと(?!思った)/g,
     /えーと(?!思った)/g,
     /あのー/g,
+    /そのー/g,
+    /なんか(?!好き)/g,
     /まー/g,
     /うーん/g,
     /うんと/g,
