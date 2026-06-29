@@ -1,8 +1,8 @@
-# Realtime Filler Cleaner
+# Realtime Voice Converter
 
-リアルタイム音声メモのフィラー除去ツールです。
+リアルタイム音声メモをコピーしやすいテキストに変換する静的Webツールです。
 
-ブラウザの音声認識で話した内容を表示しながら、`えーっと`、`えっと`、`うーん` などのよくあるフィラーを控えめに削ります。AIによる要約、校正、リライトは行いません。
+ブラウザの音声認識で話した内容をリアルタイム表示しながら、`えーっと`、`えっと`、`うーん` などのよくあるフィラーを控えめに削ります。AIによる要約、校正、リライトは行いません。
 
 ## What This Is
 
@@ -32,8 +32,8 @@
 
 ## Shortcut
 
-- macOS: `Command + Option + M`
-- macOS fallback: `Control + Option + M`
+- macOS: `Control + Option + M`
+- macOS fallback: `Command + Option + M`
 - Windows/Linux: `Control + Alt + M`
 - fallback: `Control + Shift + M`
 

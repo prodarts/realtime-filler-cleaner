@@ -23,18 +23,13 @@ function App() {
 
   useEffect(() => {
     function handleKeyDown(event) {
-      const target = event.target;
-      const isEditable =
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target?.isContentEditable;
       const isMicShortcut =
         event.code === 'KeyM' &&
         ((event.metaKey && event.altKey) ||
           (event.ctrlKey && event.altKey) ||
           (event.ctrlKey && event.shiftKey));
 
-      if (event.isComposing || isEditable || !isMicShortcut) {
+      if (event.isComposing || !isMicShortcut) {
         return;
       }
 
@@ -141,9 +136,9 @@ function App() {
       <header className="topbar">
         <div>
           <p className="eyebrow">Static browser tool</p>
-          <h1>Realtime Filler Cleaner</h1>
+          <h1>Realtime Voice Converter</h1>
           <p>
-            話した内容をリアルタイム表示しながら、よくあるフィラーだけを控えめに削る音声メモツールです。
+            話した内容をリアルタイム表示しながら、コピーしやすいテキストに変換する音声メモツールです。
           </p>
         </div>
         <div className="status" data-active={isListening}>
@@ -159,7 +154,7 @@ function App() {
           disabled={!canUseSpeech}
         >
           <span>{isListening ? '停止' : 'マイク開始'}</span>
-          <kbd>⌘⌥M</kbd>
+          <kbd>⌃⌥M</kbd>
         </button>
         <button onClick={copyCleanedText} disabled={!cleanedText}>
           コピー
