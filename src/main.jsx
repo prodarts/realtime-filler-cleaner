@@ -10,7 +10,12 @@ function getSpeechRecognition() {
 function App() {
   const Recognition = useMemo(() => getSpeechRecognition(), []);
   const recognitionRef = useRef(null);
+  const rawTextRef = useRef(null);
+  const cleanedTextRef = useRef(null);
   const finalTranscriptRef = useRef('');
+  const pendingTranscriptRef = useRef('');
+  const renderTimerRef = useRef(null);
+  const lastRenderedTranscriptRef = useRef('');
   const [language, setLanguage] = useState('ja-JP');
   const [activePane, setActivePane] = useState('cleaned');
   const [isListening, setIsListening] = useState(false);
@@ -20,6 +25,26 @@ function App() {
   const [error, setError] = useState('');
 
   const canUseSpeech = Boolean(Recognition);
+
+  useEffect(() => {
+    return () => {
+      if (renderTimerRef.current) {
+        window.clearTimeout(renderTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isListening) {
+      return;
+    }
+
+    for (const element of [rawTextRef.current, cleanedTextRef.current]) {
+      if (element) {
+        element.scrollTop = element.scrollHeight;
+      }
+    }
+  }, [rawText, cleanedText, isListening]);
 
   useEffect(() => {
     function handleKeyDown(event) {
@@ -45,9 +70,36 @@ function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isListening, Recognition, language]);
 
-  function updateTexts(text) {
+  function renderTexts(text) {
+    if (text === lastRenderedTranscriptRef.current) {
+      return;
+    }
+
+    lastRenderedTranscriptRef.current = text;
     setRawText(text);
     setCleanedText(removeFillers(text, language));
+  }
+
+  function scheduleTextUpdate(text, options = {}) {
+    pendingTranscriptRef.current = text;
+
+    if (options.immediate) {
+      if (renderTimerRef.current) {
+        window.clearTimeout(renderTimerRef.current);
+        renderTimerRef.current = null;
+      }
+      renderTexts(text);
+      return;
+    }
+
+    if (renderTimerRef.current) {
+      return;
+    }
+
+    renderTimerRef.current = window.setTimeout(() => {
+      renderTimerRef.current = null;
+      renderTexts(pendingTranscriptRef.current);
+    }, 90);
   }
 
   function startListening() {
@@ -79,7 +131,7 @@ function App() {
         }
       }
 
-      updateTexts(`${finalTranscriptRef.current} ${interimTranscript}`.trim());
+      scheduleTextUpdate(`${finalTranscriptRef.current} ${interimTranscript}`.trim());
     };
 
     recognition.onerror = (event) => {
@@ -105,6 +157,12 @@ function App() {
 
   function clearText() {
     finalTranscriptRef.current = '';
+    pendingTranscriptRef.current = '';
+    lastRenderedTranscriptRef.current = '';
+    if (renderTimerRef.current) {
+      window.clearTimeout(renderTimerRef.current);
+      renderTimerRef.current = null;
+    }
     setRawText('');
     setCleanedText('');
     setError('');
@@ -227,8 +285,12 @@ function App() {
             <h2>認識そのまま</h2>
           </div>
           <textarea
+            ref={rawTextRef}
             value={rawText}
-            onChange={(event) => updateTexts(event.target.value)}
+            onChange={(event) => {
+              finalTranscriptRef.current = event.target.value;
+              scheduleTextUpdate(event.target.value, { immediate: true });
+            }}
             placeholder="ここに音声認識されたテキストが入ります。直接入力して試すこともできます。"
           />
         </article>
@@ -238,6 +300,7 @@ function App() {
             <h2>フィラー削除済み</h2>
           </div>
           <textarea
+            ref={cleanedTextRef}
             value={cleanedText}
             onChange={(event) => setCleanedText(event.target.value)}
             placeholder="フィラーを削ったテキストがここに表示されます。"
